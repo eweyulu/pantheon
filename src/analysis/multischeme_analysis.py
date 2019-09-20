@@ -16,14 +16,16 @@ def plot_multischeme_summary(data_dirs, output_dir):
 	plt.figure(2)
 	fig2, ax2 = plt.subplots(num=2)
 	fig2.suptitle('Loss and Queue Size')
-	colors = list('rgbcmy')
+	colors = list('rgbcmyk')
 	for scheme_id, data_dir in enumerate(data_dirs):
-		csv_path = os.path.join(data_dir, 'results.csv')
+		csv_path = os.path.join(data_dir, 'res_avg.csv')
 		data = pd.read_csv(csv_path)
-		scheme = data['scheme_a'].values[0]
+		scheme_a = data['scheme_a'].values[0]
+		scheme_b = data['scheme_b'].values[0]
 		solo = data.query('scheme_a==scheme_b')
 		mixed = data.query('scheme_a!=scheme_b')
-		for k, v in {'vs cubic':mixed, '': solo}.items():
+		for k, v in {'vs' :mixed, '':solo}.items():
+#		for k, v in {'':solo}.items() + {'':mixed}.items():
 			if len(v)==0: continue
 			x_rtt = abs(v['rtprop_a'] - v['rtprop_b'])
 			y_fair = v['overall_fairness']
@@ -31,10 +33,17 @@ def plot_multischeme_summary(data_dirs, output_dir):
 			fairness = np.mean(y_fair)
 			q_fraction = np.mean((v['mean_bottleneck_delay'] - (v['bottleneck_rtprop']/2))*v['bottleneck_tput']*1000.0/8.0/v['q_size'])
 			loss = np.mean(v['loss'])
-			plt.figure(1)
-			plt.plot(rtt_corr, fairness, 'o' if k=='' else 'x', label='%s %s'%(scheme, k), color=colors[scheme_id%len(colors)])
-			plt.figure(2)
-			plt.plot(q_fraction, loss, 'o' if k=='' else 'x', label='%s %s'%(scheme, k), color=colors[scheme_id%len(colors)])
+            
+			if k=='':
+				plt.figure(1)
+				plt.plot(rtt_corr, fairness, 'o', label='%s %s'%(scheme_a, k), color=colors[scheme_id%len(colors)])
+				plt.figure(2)
+				plt.plot(q_fraction, loss, 'o', label='%s %s'%(scheme_a, k), color=colors[scheme_id%len(colors)])
+			else:
+				plt.figure(1)
+				plt.plot(rtt_corr, fairness, 'x', label='%s vs %s'%(scheme_a, scheme_b), color=colors[scheme_id%len(colors)])
+				plt.figure(2)
+				plt.plot(q_fraction, loss, 'x', label='%s vs %s'%(scheme_a, scheme_b), color=colors[scheme_id%len(colors)])
 	
 	plt.figure(1)
 	ax1.set_xlabel('Correlation coefficient of RTT unfairness and Fairness')
